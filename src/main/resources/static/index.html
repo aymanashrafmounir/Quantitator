@@ -1,0 +1,111 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Pricing Optimizer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-brand">FashionOpt</div>
+    <div class="nav-links">
+        <button class="nav-link active" data-section="dashboard">Dashboard</button>
+        <button class="nav-link" data-section="simulate">Simulate</button>
+        <button class="nav-link" data-section="results">Results</button>
+    </div>
+</nav>
+
+<div id="dashboard" class="section active">
+    <div class="landing">
+        <div class="hero">
+            <h1>Optimize Your Fashion Pricing Strategy</h1>
+            <p>AI-powered pricing optimization for maximum profitability</p>
+        </div>
+        <div class="metrics">
+            <div class="metric-card">
+                <h3>Predicted Profit</h3>
+                <p id="profit-metric">$0</p>
+            </div>
+            <div class="metric-card">
+                <h3>Optimal Products</h3>
+                <p id="products-metric">0</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="simulate" class="section">
+    <div class="simulation-panel">
+        <div class="upload-section">
+            <h2>Upload Product Data (CSV/XLSX)</h2>
+            <div id="drop-zone" class="drop-zone">
+                <span>Drag & Drop File Here</span>
+                <input type="file" id="file-input" accept=".csv,.xlsx">
+            </div>
+            <div id="file-info" class="hidden">
+                <p>Uploaded file: <span id="filename"></span></p>
+                <p>Rows detected: <span id="row-count"></span></p>
+                <div id="column-mapping"></div>
+            </div>
+        </div>
+
+        <div class="parameters">
+            <h2>Optimization Parameters</h2>
+            <div class="param-group">
+                <label>Production Budget ($)</label>
+                <input type="number" id="production-budget" class="param-input" required>
+            </div>
+            <div class="param-group">
+                <label>Marketing Budget ($)</label>
+                <input type="number" id="marketing-budget" class="param-input" required>
+            </div>
+            <div class="param-group">
+                <label>Logistics Budget ($)</label>
+                <input type="number" id="logistics-budget" class="param-input" required>
+            </div>
+            <div class="param-group">
+                <label>Discount Base</label>
+                <input type="number" id="discount_base" class="param-input" required>
+            </div>
+            <div class="param-group">
+                <label>Shelf Space Storage</label>
+                <input type="number" id="space_storage" class="param-input" required>
+            </div>
+            <div class="param-group">
+                <label>Chromsome Bits</label>
+                <input type="number" id="bits_number" class="param-input" required>
+            </div>
+            <button id="run-simulation">Run Simulation</button>
+        </div>
+    </div>
+</div>
+
+<div id="results" class="section">
+    <div class="results-container">
+        <div class="metrics">
+            <div class="metric-card">
+                <h3>Total Profit</h3>
+                <p id="total-profit">$0</p>
+            </div>
+            <div class="metric-card">
+                <h3>Products Optimized</h3>
+                <p id="products-count">0</p>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="productionChart"></canvas>
+        </div>
+
+        <h2>Detailed Product Results</h2>
+        <div class="results-table" id="results-table"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
