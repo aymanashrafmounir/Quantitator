@@ -24,12 +24,12 @@ class Chromosome:
         logger.debug(f"Init Chrom: {self.bitstring}")
 
     def decode(self) -> List[int]:
-        quant = []
+        integerQuantity = []
         for i in range(self.num_products):
-            seg = self.bitstring[i*self.bits_per_product:(i+1)*self.bits_per_product]
-            quant.append(int(seg, 2))
-        logger.debug(f"Decoded: {quant}")
-        return quant
+            segment = self.bitstring[i*self.bits_per_product:(i+1)*self.bits_per_product]
+            integerQuantity.append(int(segment, 2))
+        logger.debug(f"Decoded: {integerQuantity}")
+        return integerQuantity
 
     def clone(self) -> 'Chromosome':
         return Chromosome(self.bits_per_product, self.num_products, self.bitstring)
@@ -52,6 +52,25 @@ class Chromosome:
                 quantities[idx] -= 1
             else:
                 break
+
+        def feasible(qs):
+            return ( sum(params[i]['cp']*qs[i] for i in range(len(qs))) <= Bp
+                     and sum(params[i]['cm']*qs[i] for i in range(len(qs))) <= Bm
+                     and sum(params[i]['cl']*qs[i] for i in range(len(qs))) <= BL
+                     and sum(params[i]['S_i']*(qs[i]+params[i]['s_old'])
+                             for i in range(len(qs))) <= S_max )
+
+        while not feasible(quantities):
+            idx = max(range(len(quantities)),
+                      key=lambda i: quantities[i] * (params[i]['cp']
+                                                     + params[i]['cm']
+                                                     + params[i]['cl']
+                                                     + params[i]['S_i']))
+            if quantities[idx] > 0:
+                quantities[idx] -= 1
+            else:
+                break
+
         # Encode back
         bits = [format(q, 'b').zfill(self.bits_per_product) for q in quantities]
         self.bitstring = ''.join(bits)
@@ -101,20 +120,20 @@ def check_constraints(
 
 
 # --- GA Operators ---
-def fitness_and_penalties(q: List[int], params: List[Dict[str, float]], d_base, age_max, s_max) -> Tuple[float, List[float], List[float]]:
-    penalties, profits = [], []
+def fitness_and_penalties(q: List[int], params: List[Dict[str, float]], d_base, age_max, storage_sum) -> Tuple[float, List[float], List[float]]:
+    penalties, penalizedProfits = [], []
     total = 0.0
     for x, p in zip(q, params):
-        rev = p['pr'] * x
-        cost_u = p['cp'] + p['cm'] + p['cl'] + p['cs']
-        cost = cost_u * x
-        pe = d_base * (p['age']/age_max) * (p['s_old']/s_max)
-        pen = (rev - cost) * pe
-        profit_i = (rev - cost) - pen
-        penalties.append(pen)
-        profits.append(profit_i)
-        total += profit_i
-    return total, penalties, profits
+        totalRevenue = p['pr'] * x
+        costPerItem = p['cp'] + p['cm'] + p['cl'] + p['cs']
+        totalCost = costPerItem * x
+        pe = d_base * (p['age']/age_max) * (p['s_old']/storage_sum)
+        itemProfitWithPenalty = (totalRevenue - totalCost) * (1 - pe)
+        penalties.append(pe)
+        penalizedProfits.append(itemProfitWithPenalty)
+        total += itemProfitWithPenalty
+        logger.debug(f"fitness X_i {x} age = {p['age']}  Remaining Product = {p['s_old']} storage Sum = {storage_sum} Max Age = {age_max} total {total}")
+    return total, penalties, penalizedProfits
 
 def tournament_selection(pop, fits, k=3) -> Chromosome:
     candidates = random.sample(list(zip(pop, fits)), k)
@@ -135,8 +154,13 @@ def mutate(ch: Chromosome, mu: float) -> None:
             bits[i] = '1' if bits[i]=='0' else '0'
     ch.bitstring = ''.join(bits)
 
+#profit without penalties (real profit for the user)
+def calculateExpectedProfit(q: List[int], params: List[Dict[str, float]]) -> float:
+    return sum((params[i]['pr'] - (params[i]['cp'] + params[i]['cm'] + params[i]['cl'] + params[i]['cs'])) * q[i]
+               for i in range(len(q)))
+
 # --- GA Runner ---
-def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
+def run_ga(excel_path, productionBudget, marketingBudget, logisticsBudget, storageSum, d_base, bits_per_chromosome):
     try:
         logger.info(f"Reading Excel file: {excel_path}")
         df = pd.read_excel(excel_path)
@@ -170,11 +194,12 @@ def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
         gens = 100
         cr = 0.7
         mr = 0.01
+
         age_max = params_df['age'].max()
-        max_q = int(params_df['s_old'].max())
+        storage_sum = params_df['s_old'].sum()
 
         # Prepare parameters
-        params_df['pe'] = d_base * (params_df['age']/age_max) * (params_df['s_old']/S_max)
+        params_df['pe'] = d_base * (params_df['age']/age_max) * (params_df['s_old']/storage_sum)
         params = params_df.to_dict('records')
 
         # Initialize population
@@ -185,16 +210,16 @@ def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
         for g in range(gens):
             # Repair & validate chromosomes
             for c in pop:
-                c.repair(params, Bp, Bm, BL, S_max)
+                c.repair(params, productionBudget, marketingBudget, logisticsBudget, storageSum)
                 q = c.decode()
-                valid = check_constraints(q, params, Bp, Bm, BL, S_max)
+                valid = check_constraints(q, params, productionBudget, marketingBudget, logisticsBudget, storageSum)
                 logger.debug(f"Generation {g}: Chrom {c.bitstring} valid: {valid}")
 
             # Evaluate fitness
             fits = []
             for c in pop:
                 q = c.decode()
-                fit, _, _ = fitness_and_penalties(q, params, d_base, age_max, S_max)
+                fit, _, _ = fitness_and_penalties(q, params, d_base, age_max, storage_sum)
                 fits.append(fit)
 
             # Track best solution
@@ -211,7 +236,7 @@ def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
                 mutate(c1, mr)
                 mutate(c2, mr)
                 for c in (c1, c2):
-                    c.repair(params, Bp, Bm, BL, S_max)
+                    c.repair(params, productionBudget, marketingBudget, logisticsBudget, storageSum)
                     new_pop.append(c)
                     if len(new_pop) >= pop_size:
                         break
@@ -219,7 +244,7 @@ def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
 
         # Final results calculation
         q = best.decode()
-        total_profit, penalties, profits = fitness_and_penalties(q, params, d_base, age_max, S_max)
+        realProfit = calculateExpectedProfit(q, params)
 
         # Build results structure
         products = []
@@ -240,7 +265,7 @@ def run_ga(excel_path, Bp, Bm, BL, S_max, d_base, bits_per_chromosome):
             })
 
         return {
-            "total_profit": total_profit,
+            "total_profit": realProfit,
             "products": products
         }
 
