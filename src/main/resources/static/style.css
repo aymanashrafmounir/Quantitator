@@ -1,198 +1,683 @@
 /* style.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700&display=swap");
+
 :root {
-    --primary-color: #1a1a1a;
-    --accent-color: #ff4d6d;
-    --text-color: #ffffff;
-    --hover-color: rgba(255,77,109,0.1);
+    --primary-bg-color: #222831; /* Dark Slate Grey */
+    --secondary-bg-color: #393E46; /* Gunmetal */
+    --accent-color-primary: #00ADB5; /* Teal */
+    --accent-color-secondary: #EEEEEE; /* Light Grey/Off-white for highlights */
+    --text-color-primary: #FFFFFF;
+    --text-color-secondary: #B0B0B0; /* Lighter grey for less emphasis */
+    --error-color: #FF6B6B;
+    --success-color: #51CF66;
+
+    --font-primary: "Inter", sans-serif;
+    --font-headings: "Montserrat", sans-serif;
+
+    --border-radius-small: 4px;
+    --border-radius-medium: 8px;
+    --border-radius-large: 12px;
+
+    --shadow-light: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-strong: 0 6px 12px rgba(0,0,0,0.2);
+
+    --transition-speed-fast: 0.2s;
+    --transition-speed-normal: 0.3s;
 }
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background-color: var(--primary-color);
-    color: var(--text-color);
+    font-family: var(--font-primary);
+    background-color: var(--primary-bg-color);
+    color: var(--text-color-primary);
     min-height: 100vh;
+    line-height: 1.6;
+    font-size: 16px;
 }
 
+/* General Helper Classes */
+.hidden {
+    display: none !important;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-headings);
+    color: var(--accent-color-secondary);
+    margin-top: 0;
+    margin-bottom: 0.75em;
+}
+
+h1 { font-size: 2.8rem; margin-bottom: 1rem; }
+h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+h3 { font-size: 1.5rem; margin-bottom: 1rem; }
+p { margin-bottom: 1rem; color: var(--text-color-secondary); }
+
+/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
-    padding: 1rem 2rem;
-    background-color: rgba(0,0,0,0.9);
+    align-items: center;
+    padding: 1rem 2.5rem;
+    background-color: var(--secondary-bg-color);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
+    box-shadow: var(--shadow-medium);
+}
+
+.nav-brand {
+    font-family: var(--font-headings);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-color-primary);
 }
 
 .nav-links button {
     background: none;
     border: none;
-    color: var(--text-color);
-    margin: 0 1rem;
-    padding: 0.5rem 1rem;
+    color: var(--text-color-secondary);
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0 0.75rem;
+    padding: 0.6rem 1.2rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: color var(--transition-speed-normal) ease, background-color var(--transition-speed-normal) ease;
+    border-radius: var(--border-radius-small);
+    position: relative;
 }
 
 .nav-links button:hover {
-    background-color: var(--hover-color);
-    border-radius: 4px;
+    color: var(--text-color-primary);
+    background-color: rgba(255,255,255,0.05);
 }
 
 .nav-links button.active {
-    border-bottom: 2px solid var(--accent-color);
+    color: var(--accent-color-primary);
+    font-weight: 600;
 }
 
+.nav-links button.active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 3px;
+    background-color: var(--accent-color-primary);
+    border-radius: 2px;
+}
+
+/* Sections */
 .section {
     display: none;
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
+    padding: 2.5rem;
+    max-width: 1300px;
+    margin: 2rem auto;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .section.active {
     display: block;
 }
 
+/* Dashboard - Hero */
 .landing .hero {
     text-align: center;
-    padding: 4rem 0;
-    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-    url('fashion-bg.jpg');
+    padding: 5rem 2rem;
+    background: linear-gradient(rgba(34, 40, 49, 0.85), rgba(34, 40, 49, 0.95)),
+                url("https://images.unsplash.com/photo-1509316976501-20684c400943?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1740&q=80"); 
     background-size: cover;
-    border-radius: 8px;
-    margin-bottom: 2rem;
+    background-position: center;
+    border-radius: var(--border-radius-large);
+    margin-bottom: 3rem;
+    box-shadow: var(--shadow-strong);
 }
 
+.landing .hero h1 {
+    color: var(--text-color-primary);
+    font-size: 3.2rem;
+}
+
+.landing .hero p {
+    font-size: 1.25rem;
+    color: var(--text-color-secondary);
+    max-width: 600px;
+    margin: 1rem auto 0;
+}
+
+/* Metrics & KPI Cards */
 .metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* Adjusted minmax for potentially more cards */
     gap: 2rem;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem; /* Added margin bottom for spacing */
 }
 
 .metric-card {
-    background: rgba(255,255,255,0.05);
-    padding: 1.5rem;
-    border-radius: 10px;
+    background: var(--secondary-bg-color);
+    padding: 1.8rem; /* Slightly adjusted padding */
+    border-radius: var(--border-radius-medium);
     text-align: center;
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-speed-normal) ease, box-shadow var(--transition-speed-normal) ease;
+    box-shadow: var(--shadow-light);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Helps align content if cards have varying text length */
 }
 
 .metric-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-strong);
 }
 
+.metric-card h3 {
+    color: var(--accent-color-secondary);
+    font-size: 1.2rem; /* Adjusted for consistency */
+    margin-bottom: 0.8rem;
+}
+
+.metric-card p {
+    font-size: 1rem; /* Adjusted for consistency */
+    font-weight: 700;
+    color: var(--accent-color-primary);
+    margin-bottom: 0.3rem; /* Reduced margin for sub-value */
+    line-height: 1.2;
+}
+
+.kpi-sub-value {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    display: block;
+    margin-top: 0.2rem;
+}
+
+/* Simulate Section */
+.simulation-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+@media (min-width: 992px) {
+    .simulation-panel {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.upload-section, .parameters {
+    background: var(--secondary-bg-color);
+    padding: 2.5rem;
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--shadow-light);
+}
+
+.upload-section h2, .parameters h2, .results-container h2, .results-container h3 {
+    margin-bottom: 1.5rem; /* Consistent bottom margin for headings */
+    border-bottom: 2px solid var(--accent-color-primary);
+    padding-bottom: 0.75rem;
+    display: inline-block;
+}
+
+.results-container h3 { /* Specific styling for chart titles */
+    font-size: 1.3rem;
+    border-bottom: none; /* Remove border for chart titles if preferred */
+    padding-bottom: 0.5rem;
+    text-align: center; /* Center chart titles */
+    width: 100%;
+    display: block;
+}
+
+/* Drop Zone */
 .drop-zone {
-    border: 2px dashed var(--accent-color);
-    padding: 2rem;
+    border: 3px dashed var(--accent-color-primary);
+    padding: 3rem 2rem;
     text-align: center;
     margin: 2rem 0;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background-color var(--transition-speed-normal) ease, border-color var(--transition-speed-normal) ease;
+    border-radius: var(--border-radius-medium);
+    background-color: rgba(0,0,0,0.1);
 }
 
-.drop-zone:hover {
-    background-color: var(--hover-color);
+.drop-zone span {
+    font-size: 1.1rem;
+    color: var(--text-color-secondary);
 }
 
-.parameters {
-    background: rgba(255,255,255,0.05);
-    padding: 2rem;
-    border-radius: 8px;
-    margin-top: 2rem;
+.drop-zone.dragover {
+    background-color: rgba(0, 173, 181, 0.15);
+    border-color: var(--accent-color-secondary);
 }
 
-.param-group {
+#file-input {
+    display: none; 
+}
+
+#file-info {
+    background: rgba(0,0,0,0.1);
+    padding: 1.5rem;
     margin: 1.5rem 0;
+    border-radius: var(--border-radius-small);
+    border-left: 4px solid var(--accent-color-primary);
+}
+
+#file-info p {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+#file-info span {
+    font-weight: 600;
+    color: var(--accent-color-secondary);
+}
+
+/* Column Mapping */
+#column-mapping h3 {
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: var(--accent-color-secondary);
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.mapping-group {
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem;
+    background-color: rgba(0,0,0,0.05);
+    border-radius: var(--border-radius-small);
+}
+
+.mapping-group label {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.mapping-group select {
+    background: var(--primary-bg-color);
+    color: var(--text-color-primary);
+    border: 1px solid var(--accent-color-primary);
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--border-radius-small);
+    font-size: 0.9rem;
+    width: 60%; 
+    transition: border-color var(--transition-speed-normal) ease, box-shadow var(--transition-speed-normal) ease;
+}
+
+.mapping-group select:focus {
+    outline: none;
+    border-color: var(--accent-color-secondary);
+    box-shadow: 0 0 0 2px rgba(0, 173, 181, 0.3);
+}
+
+/* Parameters Form */
+.param-group {
+    margin-bottom: 1.8rem;
+}
+
+.param-group label {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+    color: var(--text-color-secondary);
 }
 
 .param-input {
     width: 100%;
-    padding: 0.8rem;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid var(--accent-color);
-    color: white;
-    border-radius: 4px;
+    padding: 0.9rem 1rem;
+    background: var(--primary-bg-color);
+    border: 1px solid var(--accent-color-primary);
+    color: var(--text-color-primary);
+    border-radius: var(--border-radius-small);
     font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color var(--transition-speed-normal) ease, box-shadow var(--transition-speed-normal) ease;
 }
 
+.param-input:focus {
+    outline: none;
+    border-color: var(--accent-color-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 173, 181, 0.3);
+}
+
+.param-input.invalid {
+    border-color: var(--error-color) !important;
+    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.3);
+}
+
+.validation-message {
+    font-size: 0.85rem;
+    color: var(--error-color);
+    margin-top: 0.4rem;
+    display: block;
+    min-height: 1em; /* Reserve space to prevent layout shifts */
+}
+
+/* Run Simulation Button */
 #run-simulation {
-    background: var(--accent-color);
-    color: white;
+    background: var(--accent-color-primary);
+    color: var(--text-color-primary);
     border: none;
     padding: 1rem 2rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     cursor: pointer;
     width: 100%;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
+    border-radius: var(--border-radius-small);
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-headings);
+    transition: background-color var(--transition-speed-normal) ease, transform var(--transition-speed-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #run-simulation:hover {
-    background-color: #ff2d55;
+    background-color: #007A7F; /* Darker teal */
 }
 
-.hidden {
-    display: none;
+#run-simulation:active {
+    transform: scale(0.98);
 }
 
-#file-info {
-    background: rgba(255,255,255,0.05);
+#run-simulation.loading {
+    background-color: #007A7F;
+    cursor: not-allowed;
+}
+
+#run-simulation .spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: var(--text-color-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results Section */
+.results-container {
+    background: var(--secondary-bg-color);
+    padding: 2.5rem;
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--shadow-light);
+}
+
+/* Charts Grid Layout */
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Default to single column for smaller screens */
+    gap: 2.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+@media (min-width: 992px) { /* Two columns for larger screens */
+    .charts-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.chart-wrapper {
+    background: var(--primary-bg-color);
     padding: 1.5rem;
-    margin: 1rem 0;
-    border-radius: 8px;
+    border-radius: var(--border-radius-medium);
+    box-shadow: var(--shadow-inner, inset 0 1px 3px rgba(0,0,0,0.2));
 }
 
-.mapping-group {
-    margin: 1rem 0;
-}
-
-.mapping-group select {
-    background: rgba(255,255,255,0.1);
-    color: white;
-    border: 1px solid var(--accent-color);
-    padding: 0.5rem;
-    margin-left: 1rem;
-    border-radius: 4px;
+.chart-wrapper.full-width-chart {
+    grid-column: 1 / -1; /* Makes this chart span full width if grid has multiple columns */
 }
 
 .chart-container {
-    background: rgba(255,255,255,0.05);
-    padding: 2rem;
-    border-radius: 8px;
-    margin-top: 2rem;
+    /* Removed background from here, now on .chart-wrapper */
+    padding: 0; /* Padding is on wrapper */
+    border-radius: var(--border-radius-medium); /* Keep if needed for canvas itself */
+    margin-top: 1rem; /* Space between chart title and chart */
+    height: 350px; /* Default height for charts */
+}
+
+#profitContributionChartContainer {
+    height: 400px; /* Pie chart might need more height */
+}
+
+/* Results Table */
+.results-table-wrapper {
+    overflow-x: auto; 
+    margin-top: 1.5rem;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--primary-bg-color);
+    border-radius: var(--border-radius-small);
+    overflow: hidden; 
+}
+
+.results-table th, .results-table td {
+    padding: 1rem 1.2rem;
+    text-align: left;
+    border-bottom: 1px solid var(--secondary-bg-color);
+    font-size: 0.95rem;
+}
+
+.results-table th {
+    background-color: rgba(0, 173, 181, 0.2); 
+    color: var(--accent-color-secondary);
+    font-weight: 600;
+    font-family: var(--font-headings);
+}
+
+.results-table tbody tr:nth-child(even) {
+    background-color: rgba(0,0,0,0.1);
+}
+
+.results-table tbody tr:hover {
+    background-color: rgba(0, 173, 181, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+    .navbar {
+        padding: 1rem 1.5rem;
+    }
+    .nav-brand {
+        font-size: 1.6rem;
+    }
+    .nav-links button {
+        margin: 0 0.5rem;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.95rem;
+    }
+    .section {
+        padding: 1.5rem;
+        margin: 1.5rem auto;
+    }
+    .landing .hero {
+        padding: 3rem 1.5rem;
+    }
+    .landing .hero h1 { font-size: 2.5rem; }
+    .landing .hero p { font-size: 1.1rem; }
+
+    .upload-section, .parameters, .results-container {
+        padding: 1.5rem;
+    }
+    .charts-grid {
+        grid-template-columns: 1fr; /* Ensure single column on medium screens too */
+    }
+    .chart-container {
+        height: 300px; /* Adjust chart height for smaller screens */
+    }
+    #profitContributionChartContainer {
+        height: 350px;
+    }
 }
 
 @media (max-width: 768px) {
     .navbar {
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
     }
-
+    .nav-brand {
+        margin-bottom: 0.8rem;
+    }
     .nav-links {
-        margin-top: 1rem;
+        width: 100%;
+        display: flex;
+        justify-content: space-around;
+        margin-top: 0.5rem;
+    }
+    .nav-links button {
+        flex-grow: 1;
+        text-align: center;
+        margin: 0 0.2rem;
+    }
+    .nav-links button.active::after {
+        width: 40%;
+        height: 2px;
     }
 
-    .section {
-        padding: 1rem;
+    h1 { font-size: 2.2rem; }
+h2 { font-size: 1.7rem; }
+h3 { font-size: 1.3rem; }
+
+    .metric-card p {
+        font-size: 2rem;
+    }
+    .metric-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .simulation-panel {
+        grid-template-columns: 1fr; 
+    }
+
+    .mapping-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .mapping-group select {
+        width: 100%;
+        margin-top: 0.5rem;
     }
 }
 
-.result-table {
+@media (max-width: 480px) {
+    body { font-size: 15px; }
+    .section { padding: 1rem; }
+    .landing .hero h1 { font-size: 2rem; }
+    .landing .hero p { font-size: 1rem; }
+    .nav-links button {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.5rem;
+    }
+    .results-table th, .results-table td {
+        padding: 0.75rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    .metric-card {
+        padding: 1.5rem;
+    }
+    .metric-card p {
+        font-size: 1.8rem;
+    }
+     .chart-container {
+        height: 250px; 
+    }
+    #profitContributionChartContainer {
+        height: 300px;
+    }
+}
+
+
+
+/* Global Loader Overlay */
+.global-loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    background: rgba(255,255,255,0.05);
+    height: 100%;
+    background-color: rgba(34, 40, 49, 0.85); /* --primary-bg-color with opacity */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Ensure it's on top of everything */
+    flex-direction: column;
 }
 
-.result-table th, .result-table td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid var(--accent-color);
+.loader-content p {
+    color: var(--accent-color-secondary);
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
 }
 
-.result-table th {
-    background: rgba(255,77,109,0.2);
+.spinner-large {
+    margin-left: 40%;
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(0, 173, 181, 0.3); /* --accent-color-primary with opacity */
+    border-radius: 50%;
+    border-top-color: var(--accent-color-primary);
+    animation: spin 1.2s linear infinite;
 }
+
+/* Results Message Area */
+.results-message-area {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: var(--border-radius-medium);
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.results-message-area.info {
+    background-color: rgba(0, 173, 181, 0.1); /* Teal accent for info */
+    color: var(--accent-color-secondary);
+    border-left: 4px solid var(--accent-color-primary);
+}
+
+.results-message-area.warning {
+    background-color: rgba(255, 159, 64, 0.1); /* Orange for warning/unfeasible */
+    color: #FFD580; /* Lighter orange for text */
+    border-left: 4px solid #FFA500; /* Orange */
+}
+
+.results-message-area.error {
+    background-color: rgba(255, 107, 107, 0.1); /* --error-color with opacity */
+    color: var(--error-color);
+    border-left: 4px solid var(--error-color);
+}
+
