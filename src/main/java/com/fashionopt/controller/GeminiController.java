@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
@@ -21,10 +22,10 @@ public class GeminiController {
      * General query endpoint for Gemini with persistent context
      */
     @PostMapping("/query")
-    public ResponseEntity<String> query(@RequestParam String query) {
+    public ResponseEntity<String> query(@RequestParam String query, @RequestParam(required = false) MultipartFile file) {
         try {
             // This method now ensures all context is included with every query
-            String response = geminiService.queryWithFullContext(query);
+            String response = geminiService.queryWithFullContext(query, file);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

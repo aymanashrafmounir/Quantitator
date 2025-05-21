@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -33,15 +34,31 @@ public class GeminiService {
     
     @Autowired
     private GeminiRestApiService geminiRestApiService;
+
+    @Autowired
+    private ExcelParsingService excelParsingService; // New field
     
     /**
      * Send a query to Gemini with full context of file data, parameters, and results
      * This method ensures all context is included with every query
      */
-    public String queryWithFullContext(String userQuery) {
+    public String queryWithFullContext(String userQuery, MultipartFile file) {
         try {
             String userId = geminiContextService.generateUserId();
             Map<String, Object> context = new HashMap<>();
+            
+            String parsedExcelData = null;
+            if (file != null && !file.isEmpty()) {
+                try {
+                    parsedExcelData = excelParsingService.parseExcelFile(file);
+                    logger.info("Successfully parsed Excel file: {}", file.getOriginalFilename());
+                } catch (Exception e) {
+                    logger.error("Error parsing Excel file {}: {}", file.getOriginalFilename(), e.getMessage(), e);
+                    // Optionally, return an error message to the user or handle as appropriate
+                    // For now, we can let geminiContextService handle null parsedExcelData if it's designed to
+                    parsedExcelData = "Error parsing Excel file: " + e.getMessage(); // Or set to null and let context service handle it
+                }
+            }
             
             // First try to load existing context
             try {
@@ -78,7 +95,8 @@ public class GeminiService {
                     null, // Original request object not needed
                     results,
                     gaOutput,
-                    antOutput
+                    antOutput,
+                    parsedExcelData // new argument
                 );
                 
                 // Store updated context

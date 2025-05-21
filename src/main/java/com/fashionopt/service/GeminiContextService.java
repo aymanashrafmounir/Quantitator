@@ -65,7 +65,8 @@ public class GeminiContextService {
             SimulationRequest parameters, 
             CombinedSimulationResult results,
             String gaDetailedOutput,
-            String antDetailedOutput) {
+            String antDetailedOutput,
+            String parsedExcelData) { // New parameter
         
         Map<String, Object> context = new HashMap<>();
         
@@ -91,6 +92,9 @@ public class GeminiContextService {
         context.put("gaDetailedOutput", gaDetailedOutput);
         context.put("antDetailedOutput", antDetailedOutput);
         
+        // Add parsed Excel data
+        context.put("userUploadedExcelData", parsedExcelData); // New entry
+        
         return context;
     }
     
@@ -110,12 +114,23 @@ public class GeminiContextService {
         // Add file data context with size check
         String fileData = context.get("fileData") != null ? context.get("fileData").toString() : "";
         if (!fileData.isEmpty()) {
-            prompt.append("Product Data:\n");
+            prompt.append("Product Data (from original simulation input):\n");
             // Truncate if too large, but keep essential information
             if (fileData.length() > 8000) {
                 prompt.append(fileData.substring(0, 8000)).append("\n[Data truncated for length...]\n");
             } else {
                 prompt.append(fileData).append("\n");
+            }
+        }
+
+        // Add user uploaded Excel data context
+        String userUploadedExcelData = context.get("userUploadedExcelData") != null ? context.get("userUploadedExcelData").toString() : "";
+        if (!userUploadedExcelData.isEmpty()) {
+            prompt.append("\nUser Uploaded Excel Data:\n");
+            if (userUploadedExcelData.length() > 8000) { // Truncate if too large
+                prompt.append(userUploadedExcelData.substring(0, 8000)).append("\n[Data truncated for length...]\n");
+            } else {
+                prompt.append(userUploadedExcelData).append("\n");
             }
         }
         
