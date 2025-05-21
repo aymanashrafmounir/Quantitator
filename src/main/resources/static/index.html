@@ -1,10 +1,10 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fashion Pricing Optimizer</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
@@ -22,175 +22,331 @@
         <button class="nav-link active" data-section="dashboard">Dashboard</button>
         <button class="nav-link" data-section="simulate">Simulate</button>
         <button class="nav-link" data-section="results">Results</button>
+        <button id="gemini-chat-nav-button" class="nav-link"><i class="fas fa-robot"></i> Chat with AI</button>
     </div>
 </nav>
 
-<div id="dashboard" class="section active">
-    <div class="landing">
-        <div class="hero">
-            <h1>Optimize Your Fashion Pricing Strategy</h1>
-            <p>AI-powered pricing optimization for maximum profitability.</p>
-        </div>
-        <div class="metrics" id="dashboard-metrics">
-            <div class="metric-card">
-                <h3>Predicted Profit</h3>
-                <p id="profit-metric">$0.00</p>
+<!-- Main Application Sections -->
+<main id="app-main-content">
+    <div id="dashboard" class="section active">
+        <div class="landing">
+            <div class="hero">
+                <h1>Optimize Your Fashion Pricing Strategy</h1>
+                <p>AI-powered pricing optimization for maximum profitability.</p>
             </div>
-            <div class="metric-card">
-                <h3>Optimal Products</h3>
-                <p id="products-metric">0</p>
+            <div class="metrics" id="dashboard-metrics">
+                <div class="metric-card">
+                    <h3>Predicted Profit</h3>
+                    <p id="profit-metric">$0.00</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Optimal Products</h3>
+                    <p id="products-metric">0</p>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div id="simulate" class="section">
-    <div class="simulation-panel">
-        <div class="upload-section">
-            <h2>Upload Product Data (CSV/XLSX)</h2>
-            <div id="drop-zone" class="drop-zone">
-                <span>Drag & Drop File Here or Click to Select</span>
-                <input type="file" id="file-input" accept=".csv,.xlsx" class="visually-hidden">
+    <div id="simulate" class="section">
+        <div class="simulation-panel">
+            <div class="upload-section">
+                <h2>Upload Product Data (CSV/XLSX)</h2>
+                <div id="drop-zone" class="drop-zone">
+                    <span>Drag & Drop File Here or Click to Select</span>
+                    <input type="file" id="file-input" accept=".csv,.xlsx" class="visually-hidden">
+                </div>
+                <div id="general-upload-feedback" class="validation-message" style="text-align: center;"></div>
+                <div id="file-info" class="hidden">
+                    <p>Uploaded file: <span id="filename"></span></p>
+                    <p>Rows detected: <span id="row-count"></span></p>
+                    <div id="column-mapping"></div>
+                </div>
             </div>
-            <div id="general-upload-feedback" class="validation-message" style="text-align: center;"></div>
-            <div id="file-info" class="hidden">
-                <p>Uploaded file: <span id="filename"></span></p>
-                <p>Rows detected: <span id="row-count"></span></p>
-                <div id="column-mapping"></div>
+
+            <div class="parameters">
+                <h2>Optimization Parameters</h2>
+                <div id="form-validation-summary" class="hidden" style="background-color: rgba(255,107,107,0.1); color: var(--error-color); padding: 1rem; border-radius: var(--border-radius-small); margin-bottom: 1.5rem; border-left: 4px solid var(--error-color);"></div>
+                <div class="param-group">
+                    <label for="production-budget">Production Budget ($)</label>
+                    <input type="number" id="production-budget" class="param-input" required>
+                    <span class="validation-message" id="production-budget-error"></span>
+                </div>
+                <div class="param-group">
+                    <label for="marketing-budget">Marketing Budget ($)</label>
+                    <input type="number" id="marketing-budget" class="param-input" required>
+                    <span class="validation-message" id="marketing-budget-error"></span>
+                </div>
+                <div class="param-group">
+                    <label for="logistics-budget">Logistics Budget ($)</label>
+                    <input type="number" id="logistics-budget" class="param-input" required>
+                    <span class="validation-message" id="logistics-budget-error"></span>
+                </div>
+                <div class="param-group">
+                    <label for="discount_base">Discount Base (%)</label>
+                    <input type="number" id="discount_base" class="param-input" required step="0.01" min="0" max="100">
+                    <span class="validation-message" id="discount_base-error"></span>
+                </div>
+                <div class="param-group">
+                    <label for="space_storage">Shelf Space Storage (units)</label>
+                    <input type="number" id="space_storage" class="param-input" required min="0">
+                    <span class="validation-message" id="space_storage-error"></span>
+                </div>
+                <div class="param-group">
+                    <label for="bits_number">Chromosome Bits (Genetic Algorithm)</label>
+                    <input type="number" id="bits_number" class="param-input" required min="1">
+                    <span class="validation-message" id="bits_number-error"></span>
+                </div>
+                <button id="run-simulation">
+                    <span class="button-text">Run Simulation</span>
+                    <span class="spinner hidden"></span>
+                </button>
             </div>
         </div>
+    </div>
 
-        <div class="parameters">
-            <h2>Optimization Parameters</h2>
-            <div id="form-validation-summary" class="hidden" style="background-color: rgba(255,107,107,0.1); color: var(--error-color); padding: 1rem; border-radius: var(--border-radius-small); margin-bottom: 1.5rem; border-left: 4px solid var(--error-color);"></div>
-            <div class="param-group">
-                <label for="production-budget">Production Budget ($)</label>
-                <input type="number" id="production-budget" class="param-input" required>
-                <span class="validation-message" id="production-budget-error"></span>
+    <div id="results" class="section">
+        <div class="results-container">
+            <h2>Simulation Results & Analysis</h2>
+            <div id="results-message-area" class="results-message-area hidden">
+                <p id="results-message-text"></p>
             </div>
-            <div class="param-group">
-                <label for="marketing-budget">Marketing Budget ($)</label>
-                <input type="number" id="marketing-budget" class="param-input" required>
-                <span class="validation-message" id="marketing-budget-error"></span>
+            <div id="results-content-wrapper">
+                <!-- Algorithm Selection Tabs -->
+                <div class="algorithm-tabs">
+                    <button id="ga-tab" class="algorithm-tab active">Genetic Algorithm</button>
+                    <button id="aco-tab" class="algorithm-tab">Ant Colony Optimization</button>
+                    <button id="comparison-tab" class="algorithm-tab">Comparison</button>
+                </div>
+                
+                <!-- Genetic Algorithm Results -->
+                <div id="ga-results" class="algorithm-results active">
+                    <div class="metrics" id="ga-results-kpi-summary">
+                        <div class="metric-card">
+                            <h3>Total Overall Profit (GA)</h3>
+                            <p id="ga-total-profit">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Total Optimized Products</h3>
+                            <p id="ga-products-count">0</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Total Units Produced</h3>
+                            <p id="ga-total-units-produced">0</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Avg. Profit per Product Type</h3>
+                            <p id="ga-avg-profit-per-product">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Avg. Quantity per Product Type</h3>
+                            <p id="ga-avg-quantity-per-product">0</p>
+                        </div>
+                        <div class="metric-card" id="ga-top-profit-product-card" class="hidden">
+                            <h3>Top Product (by Profit)</h3>
+                            <p id="ga-top-profit-product-name">N/A</p>
+                            <span id="ga-top-profit-product-value" class="kpi-sub-value">$0.00</span>
+                        </div>
+                        <div class="metric-card" id="ga-top-quantity-product-card" class="hidden">
+                            <h3>Top Product (by Quantity)</h3>
+                            <p id="ga-top-quantity-product-name">N/A</p>
+                            <span id="ga-top-quantity-product-value" class="kpi-sub-value">0 units</span>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-wrapper">
+                            <h3>Optimal Production Quantity per Product (GA)</h3>
+                            <div class="chart-container">
+                                <canvas id="ga-productionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Profit Contribution by Product (GA)</h3>
+                            <div class="chart-container" id="ga-profitContributionChartContainer">
+                                <canvas id="ga-profitContributionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper full-width-chart">
+                            <h3>Cost vs. Profit per Product (GA)</h3>
+                            <div class="chart-container" id="ga-costProfitChartContainer">
+                                <canvas id="ga-costProfitChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Detailed Product Results (Genetic Algorithm)</h3>
+                    <div class="results-table-wrapper">
+                        <div id="ga-results-table-placeholder"><p>No results to display yet. Run a simulation to see product details.</p></div>
+                        <table class="results-table hidden" id="ga-results-table-actual">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Unit Cost</th>
+                                    <th>Profit/Unit</th>
+                                    <th>Total Profit</th>
+                                    <th>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Ant Colony Results -->
+                <div id="aco-results" class="algorithm-results">
+                    <div class="metrics" id="aco-results-kpi-summary">
+                        <div class="metric-card">
+                            <h3>Total Overall Profit (ACO)</h3>
+                            <p id="aco-total-profit">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Total Optimized Products</h3>
+                            <p id="aco-products-count">0</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Total Units Produced</h3>
+                            <p id="aco-total-units-produced">0</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Avg. Profit per Product Type</h3>
+                            <p id="aco-avg-profit-per-product">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Avg. Quantity per Product Type</h3>
+                            <p id="aco-avg-quantity-per-product">0</p>
+                        </div>
+                        <div class="metric-card" id="aco-top-profit-product-card" class="hidden">
+                            <h3>Top Product (by Profit)</h3>
+                            <p id="aco-top-profit-product-name">N/A</p>
+                            <span id="aco-top-profit-product-value" class="kpi-sub-value">$0.00</span>
+                        </div>
+                        <div class="metric-card" id="aco-top-quantity-product-card" class="hidden">
+                            <h3>Top Product (by Quantity)</h3>
+                            <p id="aco-top-quantity-product-name">N/A</p>
+                            <span id="aco-top-quantity-product-value" class="kpi-sub-value">0 units</span>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-wrapper">
+                            <h3>Optimal Production Quantity per Product (ACO)</h3>
+                            <div class="chart-container">
+                                <canvas id="aco-productionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper">
+                            <h3>Profit Contribution by Product (ACO)</h3>
+                            <div class="chart-container" id="aco-profitContributionChartContainer">
+                                <canvas id="aco-profitContributionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper full-width-chart">
+                            <h3>Cost vs. Profit per Product (ACO)</h3>
+                            <div class="chart-container" id="aco-costProfitChartContainer">
+                                <canvas id="aco-costProfitChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Detailed Product Results (Ant Colony Optimization)</h3>
+                    <div class="results-table-wrapper">
+                        <div id="aco-results-table-placeholder"><p>No results to display yet. Run a simulation to see product details.</p></div>
+                        <table class="results-table hidden" id="aco-results-table-actual">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Unit Cost</th>
+                                    <th>Profit/Unit</th>
+                                    <th>Total Profit</th>
+                                    <th>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Comparison Results -->
+                <div id="comparison-results" class="algorithm-results">
+                    <div class="metrics" id="comparison-results-kpi-summary">
+                        <div class="metric-card">
+                            <h3>GA Total Profit</h3>
+                            <p id="comparison-ga-profit">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>ACO Total Profit</h3>
+                            <p id="comparison-aco-profit">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Profit Difference</h3>
+                            <p id="comparison-profit-diff">$0.00</p>
+                        </div>
+                        <div class="metric-card">
+                            <h3>Better Algorithm</h3>
+                            <p id="comparison-better-algo">N/A</p>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-wrapper full-width-chart">
+                            <h3>Profit Comparison by Product</h3>
+                            <div class="chart-container">
+                                <canvas id="comparison-profitChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper full-width-chart">
+                            <h3>Quantity Comparison by Product</h3>
+                            <div class="chart-container">
+                                <canvas id="comparison-quantityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="param-group">
-                <label for="logistics-budget">Logistics Budget ($)</label>
-                <input type="number" id="logistics-budget" class="param-input" required>
-                <span class="validation-message" id="logistics-budget-error"></span>
+        </div>
+    </div>
+</main>
+
+<!-- Enhanced Gemini Chat Overlay -->
+<div id="gemini-chat-fullscreen-overlay" class="gemini-chat-fullscreen-overlay hidden">
+    <div class="gemini-chat-container">
+        <div class="gemini-chat-header">
+            <div class="gemini-chat-title">
+                <i class="fas fa-robot"></i>
+                <span>FashionOpt AI Assistant</span>
             </div>
-            <div class="param-group">
-                <label for="discount_base">Discount Base (%)</label>
-                <input type="number" id="discount_base" class="param-input" required step="0.01" min="0" max="100">
-                <span class="validation-message" id="discount_base-error"></span>
+            <div class="gemini-chat-actions">
+                <button id="gemini-chat-data-button" class="gemini-chat-action-button" title="Share current data with AI">
+                    <i class="fas fa-database"></i>
+                </button>
+                <button id="gemini-chat-clear-button" class="gemini-chat-action-button" title="Clear conversation">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button id="gemini-chat-close-button" class="gemini-chat-action-button" title="Close chat">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="param-group">
-                <label for="space_storage">Shelf Space Storage (units)</label>
-                <input type="number" id="space_storage" class="param-input" required min="0">
-                <span class="validation-message" id="space_storage-error"></span>
-            </div>
-            <div class="param-group">
-                <label for="bits_number">Chromosome Bits (Genetic Algorithm)</label>
-                <input type="number" id="bits_number" class="param-input" required min="1">
-                <span class="validation-message" id="bits_number-error"></span>
-            </div>
-            <button id="run-simulation">
-                <span class="button-text">Run Simulation</span>
-                <span class="spinner hidden"></span> <!-- This spinner is for the button itself -->
+        </div>
+        <div id="gemini-chat-messages" class="gemini-chat-messages">
+            <!-- Messages will be added here dynamically -->
+        </div>
+        <div class="gemini-chat-input-container">
+            <textarea id="gemini-chat-input" class="gemini-chat-input" placeholder="Ask me about your data or optimization results..." rows="1"></textarea>
+            <button id="gemini-chat-send-button" class="gemini-chat-send-button">
+                <i class="fas fa-paper-plane"></i>
             </button>
         </div>
-    </div>
-</div>
-
-<div id="results" class="section">
-    <div class="results-container">
-        <h2>Simulation Results & Analysis</h2>
-
-        <!-- Message area for unfeasible, errors, or waiting -->
-        <div id="results-message-area" class="results-message-area hidden">
-            <p id="results-message-text"></p>
+        <div class="gemini-chat-data-status">
+            <span id="gemini-chat-data-status-text">AI has no access to your data yet. Click <i class="fas fa-database"></i> to share.</span>
         </div>
-        
-        <div id="results-content-wrapper"> <!-- Wrapper for actual results to hide/show -->
-            <div class="metrics" id="results-kpi-summary">
-                <div class="metric-card">
-                    <h3>Total Overall Profit</h3>
-                    <p id="total-profit">$0.00</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Total Optimized Products</h3>
-                    <p id="products-count">0</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Total Units Produced</h3>
-                    <p id="total-units-produced">0</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Avg. Profit per Product Type</h3>
-                    <p id="avg-profit-per-product">$0.00</p>
-                </div>
-                <div class="metric-card">
-                    <h3>Avg. Quantity per Product Type</h3>
-                    <p id="avg-quantity-per-product">0</p>
-                </div>
-                 <div class="metric-card" id="top-profit-product-card" class="hidden">
-                    <h3>Top Product (by Profit)</h3>
-                    <p id="top-profit-product-name">N/A</p>
-                    <span id="top-profit-product-value" class="kpi-sub-value">$0.00</span>
-                </div>
-                <div class="metric-card" id="top-quantity-product-card" class="hidden">
-                    <h3>Top Product (by Quantity)</h3>
-                    <p id="top-quantity-product-name">N/A</p>
-                    <span id="top-quantity-product-value" class="kpi-sub-value">0 units</span>
-                </div>
-            </div>
-
-            <div class="charts-grid">
-                <div class="chart-wrapper">
-                    <h3>Optimal Production Quantity per Product</h3>
-                    <div class="chart-container">
-                        <canvas id="productionChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <h3>Profit Contribution by Product</h3>
-                    <div class="chart-container" id="profitContributionChartContainer">
-                        <canvas id="profitContributionChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-wrapper full-width-chart">
-                    <h3>Cost vs. Profit per Product</h3>
-                    <div class="chart-container" id="costProfitChartContainer">
-                        <canvas id="costProfitChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <h3>Detailed Product Results</h3>
-            <div class="results-table-wrapper">
-                <div id="results-table-placeholder"><p>No results to display yet. Run a simulation to see product details.</p></div>
-                <table class="results-table hidden" id="results-table-actual">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Unit Cost</th>
-                            <th>Profit/Unit</th>
-                            <th>Total Profit</th>
-                            <th>Total Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Rows will be inserted by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div> <!-- End of results-content-wrapper -->
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="pdf_export_feature.js"></script>
 </body>
 </html>
