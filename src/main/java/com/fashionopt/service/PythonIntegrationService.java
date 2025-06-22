@@ -1,14 +1,12 @@
 package com.fashionopt.service;
 
 import org.springframework.stereotype.Service;
-import java.io.File;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
 
 @Service
 public class PythonIntegrationService {
@@ -150,63 +148,5 @@ public class PythonIntegrationService {
         // Write the enhanced script
         Files.write(antPath, content.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
     }
-    
-    /**
-     * Reads the detailed output JSON files produced by the Python scripts
-     */
-    public Map<String, String> readDetailedOutputFiles(String scriptDir) {
-        Map<String, String> outputs = new HashMap<>();
-        
-        try {
-            Path gaOutputPath = Paths.get(scriptDir, "ga_detailed_output.json");
-            if (Files.exists(gaOutputPath)) {
-                outputs.put("ga", new String(Files.readAllBytes(gaOutputPath)));
-            }
-            
-            Path acoOutputPath = Paths.get(scriptDir, "aco_detailed_output.json");
-            if (Files.exists(acoOutputPath)) {
-                outputs.put("aco", new String(Files.readAllBytes(acoOutputPath)));
-            }
-        } catch (IOException e) {
-            // Log error but continue
-            System.err.println("Error reading detailed output files: " + e.getMessage());
-        }
-        
-        return outputs;
-    }
-    
-    /**
-     * Validates the Python environment
-     */
-    public void validatePythonEnvironment(String scriptDir) throws IOException {
-        // Check if directory exists
-        Path dir = Paths.get(scriptDir);
-        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
-            throw new IOException("Script directory does not exist: " + scriptDir);
-        }
-        
-        // Check if Python scripts exist
-        Path gaPath = dir.resolve("GA.py");
-        Path antPath = dir.resolve("ant.py");
-        
-        if (!Files.exists(gaPath)) {
-            throw new IOException("GA.py not found in: " + scriptDir);
-        }
-        
-        if (!Files.exists(antPath)) {
-            throw new IOException("ant.py not found in: " + scriptDir);
-        }
-        
-        // Test Python execution
-        ProcessBuilder pb = new ProcessBuilder("python", "--version");
-        try {
-            Process process = pb.start();
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new IOException("Python execution failed with exit code: " + exitCode);
-            }
-        } catch (Exception e) {
-            throw new IOException("Error executing Python: " + e.getMessage());
-        }
-    }
+
 }

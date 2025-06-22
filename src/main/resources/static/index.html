@@ -110,6 +110,31 @@
             <div id="results-message-area" class="results-message-area hidden">
                 <p id="results-message-text"></p>
             </div>
+            <div id="simulation-progress-area" class="simulation-progress-area hidden">
+                <h3>Simulation Progress</h3>
+                <div class="progress-item">
+                    <span>Overall Status:</span>
+                    <span id="overall-status" class="status-text pending">Pending</span>
+                </div>
+                <div class="progress-item">
+                    <span>Genetic Algorithm:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="ga-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <span id="ga-progress-text">0%</span>
+                    <span class="estimated-time" id="ga-eta">ETA: Calculating...</span>
+                </div>
+                <div class="progress-item">
+                    <span>Ant Colony Optimization:</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="aco-progress-bar" style="width: 0%;"></div>
+                    </div>
+                    <span id="aco-progress-text">0%</span>
+                    <span class="estimated-time" id="aco-eta">ETA: Calculating...</span>
+                </div>
+                <div id="simulation-error-message" class="error-message hidden"></div>
+            </div>
+
             <div id="results-content-wrapper">
                 <!-- Algorithm Selection Tabs -->
                 <div class="algorithm-tabs">
@@ -117,7 +142,7 @@
                     <button id="aco-tab" class="algorithm-tab">Ant Colony Optimization</button>
                     <button id="comparison-tab" class="algorithm-tab">Comparison</button>
                 </div>
-                
+
                 <!-- Genetic Algorithm Results -->
                 <div id="ga-results" class="algorithm-results active">
                     <div class="metrics" id="ga-results-kpi-summary">
@@ -177,21 +202,21 @@
                         <div id="ga-results-table-placeholder"><p>No results to display yet. Run a simulation to see product details.</p></div>
                         <table class="results-table hidden" id="ga-results-table-actual">
                             <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Unit Cost</th>
-                                    <th>Profit/Unit</th>
-                                    <th>Total Profit</th>
-                                    <th>Total Cost</th>
-                                </tr>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Unit Cost</th>
+                                <th>Profit/Unit</th>
+                                <th>Total Profit</th>
+                                <th>Total Cost</th>
+                            </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Ant Colony Results -->
                 <div id="aco-results" class="algorithm-results">
                     <div class="metrics" id="aco-results-kpi-summary">
@@ -251,21 +276,21 @@
                         <div id="aco-results-table-placeholder"><p>No results to display yet. Run a simulation to see product details.</p></div>
                         <table class="results-table hidden" id="aco-results-table-actual">
                             <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Price</th>
-                                    <th>Unit Cost</th>
-                                    <th>Profit/Unit</th>
-                                    <th>Total Profit</th>
-                                    <th>Total Cost</th>
-                                </tr>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Unit Cost</th>
+                                <th>Profit/Unit</th>
+                                <th>Total Profit</th>
+                                <th>Total Cost</th>
+                            </tr>
                             </thead>
                             <tbody></tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Comparison Results -->
                 <div id="comparison-results" class="algorithm-results">
                     <div class="metrics" id="comparison-results-kpi-summary">
