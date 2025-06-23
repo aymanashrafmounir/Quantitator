@@ -32,10 +32,41 @@ public class GAService {
     private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[PROGRESS\\] GA: (\\d+\\.?\\d*)% completed, estimated (\\d+\\.?\\d*)s remaining");
 
     public SimulationResult runOptimization(String simulationId, Path filePath, SimulationRequest request) throws IOException, InterruptedException {
-        String scriptDir = "F:\\Coding\\Graduation Project\\Manus\\V3"; // Ensure this path is correct for your environment
+        String scriptDir = System.getProperty("user.dir"); // Use current working directory instead of hardcoded path
+
+        // Try different Python executable names in order of preference
+        String[] pythonCommands = {"python3.11", "python3", "python"};
+        String pythonExecutable = null;
+        
+        // Find the first available Python executable
+        for (String cmd : pythonCommands) {
+            try {
+                ProcessBuilder testPb = new ProcessBuilder(cmd, "--version");
+                Process testProcess = testPb.start();
+                int exitCode = testProcess.waitFor();
+                if (exitCode == 0) {
+                    pythonExecutable = cmd;
+                    logger.info("Found Python executable: " + cmd);
+                    break;
+                }
+            } catch (Exception e) {
+                // Continue to next command
+                logger.debug("Python command '" + cmd + "' not found: " + e.getMessage());
+            }
+        }
+        
+        if (pythonExecutable == null) {
+            String errorMsg = "No Python executable found. Please install Python and ensure it's in your system PATH. Tried: " + String.join(", ", pythonCommands);
+            simulationStatusService.updateError(simulationId, "GA", errorMsg);
+            SimulationResult errorResult = new SimulationResult();
+            errorResult.setTotalProfit(0.0);
+            errorResult.setProducts(new ArrayList<>());
+            simulationStatusService.updateResult(simulationId, "GA", errorResult);
+            return errorResult;
+        }
 
         ProcessBuilder pb = new ProcessBuilder(new String[]{
-                "python",
+                pythonExecutable,
                 scriptDir + File.separator + "GA.py",
                 filePath.toString(),
                 "--bp", String.valueOf(request.getProductionBudget()),
@@ -66,6 +97,8 @@ public class GAService {
         StringBuilder rawOutput = new StringBuilder();
         String line;
         String jsonOutput = ""; // To store the extracted JSON
+        long startTime = System.currentTimeMillis();
+        int progressCount = 0;
 
         while((line = reader.readLine()) != null) {
             rawOutput.append(line).append("\n");
@@ -79,12 +112,26 @@ public class GAService {
                     double progress = Double.parseDouble(matcher.group(1));
                     double estimatedTime = Double.parseDouble(matcher.group(2));
                     simulationStatusService.updateProgress(simulationId, "GA", progress, estimatedTime);
+                    progressCount++;
                 } catch (NumberFormatException e) {
                     logger.error("Error parsing GA progress line: " + line, e);
                 }
             } else if (line.trim().startsWith("{") && line.trim().endsWith("}")) {
                 // Heuristic: if a line looks like a complete JSON object, capture it as the final result
                 jsonOutput = line;
+            } else if (line.contains("Error:") || line.contains("Exception:") || line.contains("Traceback")) {
+                // Capture error messages from Python script
+                logger.error("Python GA script error: " + line);
+            }
+
+            // Provide time estimates based on progress if no explicit progress messages
+            if (progressCount == 0) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                if (elapsed > 5000) { // After 5 seconds, start providing estimates
+                    double estimatedProgress = Math.min(50.0, (elapsed / 1000.0) / 2.0); // Rough estimate
+                    double estimatedRemaining = Math.max(30.0, 120.0 - (elapsed / 1000.0));
+                    simulationStatusService.updateProgress(simulationId, "GA", estimatedProgress, estimatedRemaining);
+                }
             }
         }
 
@@ -120,8 +167,12 @@ public class GAService {
             String errorMessage = "Python GA script failed with exit code " + exitCode + ".";
             if (jsonOutput.isEmpty()) {
                 errorMessage += " No valid JSON output found.";
-            } else if (rawOutput.toString().contains("Traceback")) {
+            }
+            if (rawOutput.toString().contains("Traceback")) {
                 errorMessage += " Python script encountered an unhandled error (traceback detected).";
+            }
+            if (rawOutput.toString().contains("ModuleNotFoundError")) {
+                errorMessage += " Missing Python dependencies. Please install required modules.";
             }
             simulationStatusService.updateError(simulationId, "GA", errorMessage);
             // On script failure, return an empty result
