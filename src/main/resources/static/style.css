@@ -124,7 +124,6 @@ p { margin-bottom: 1rem; color: var(--text-color-secondary); }
 }
 
 #gemini-chat-nav-button {
-    display: flex;
     align-items: center;
     gap: 8px;
     color: var(--accent-color-primary);
@@ -141,6 +140,7 @@ p { margin-bottom: 1rem; color: var(--text-color-secondary); }
 
 #gemini-chat-nav-button i {
     font-size: 1.1rem;
+    margin-right: 0.5rem ;
 }
 
 /* Main Application Content Area */

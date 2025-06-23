@@ -15,4 +15,14 @@ public class SimulationRequest {
     private double discountBase;
     private double shelfSpace;
     private int chromosomeBits;
+    private String colName;
+    private String colPrice;
+    private String colCp;
+    private String colCm;
+    private String colCl;
+    private String colShelfCost;
+    private String colAge;
+    private String colStock;
+    private String colShelf;
+    private String colDemand;
 }
