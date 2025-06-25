@@ -1,316 +1,277 @@
-# Updated Test/ant.py
-import random
+# Ant Colony Optimization for Fashion Optimization (kero)
+import numpy as np
 import pandas as pd
-import math
+import random
 import logging
-import json
+import math
+import time
 import argparse
-import os
-import traceback
+import json
 import sys
-import time # Import time module
-from typing import List, Dict, Tuple
+import traceback
+from typing import Dict, List
 
 # Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='ant_colony.log', level=logging.DEBUG)
 
-# --- ACO Classes ---
-class Ant:
-    def __init__(self, num_products: int, quantities: List[int] = None):
-        self.num_products = num_products
-        if quantities:
-            self.quantities = quantities
+def check_constraints(solution, Cp, Cm, Cl, S_unit, BP, Bm, BL, S_max, demand_max):
+    prod_cost = np.dot(Cp, solution)
+    mark_cost = np.dot(Cm, solution)
+    log_cost = np.dot(Cl, solution)
+    shelf_used = np.dot(S_unit, solution)
+
+    if prod_cost > BP or mark_cost > Bm or log_cost > BL or shelf_used > S_max:
+        return False
+    if np.any(solution > demand_max):
+        return False
+    return True
+
+def ant_colony_optimization(data, params):
+    alpha = params.get('alpha')
+    beta = params.get('beta')
+    rho = params.get('evaporation_rate')
+    ants = params.get('n_ants')
+    iterations = params.get('n_iterations')
+    Q = params.get('pheromone_coefficient')
+    max_no_improvement = params.get('max_no_improvement')
+
+    price = data['Price'].values
+    Cp = data['Production_Cost_Per_Unit'].values
+    Cm = data['Marketing_Cost_Per_Unit'].values
+    Cl = data['Logistics_Cost_Per_Unit'].values
+    Cs = data['Shelf_Space_Cost_Per_Unit'].values
+    age = data['Age'].values
+    R = data['Remaining_Products'].values.astype(int)
+    S_unit = data['shelf_space'].values
+    De = data['Average_Expected_Demand'].values.astype(int)
+
+    demand_max = np.maximum(De - R, 0)
+    BP = params.get('budget_production', 2000000)
+    Bm = params.get('budget_marketing', 20000000)
+    BL = params.get('budget_logistics', 2000000)
+    S_max = params.get('shelf_capacity', 20000.0)
+    TSC = params.get('Total_shelf_space_cost', 150000.0) # This parameter is not used in the core logic, only in report
+    d_base = params.get('d_base', 0.1)
+
+    age_max = np.max(age)
+    s_old_space = R
+    storage_sum = np.sum(s_old_space)
+    Pe = d_base * (age / age_max) * (s_old_space / storage_sum)
+    unit_profit = price - (Cp + Cm + Cl + Cs)
+    net_profit_unit = unit_profit * (1 - Pe)
+
+    domains, heuristics, pheromone = [], [], []
+    for i in range(len(price)):
+        max_x = max(int(demand_max[i]), 0)
+        if net_profit_unit[i] <= 0 or max_x <= 0:
+            domains.append([0])
+            heuristics.append(np.array([1.0]))
+            pheromone.append(np.array([1.0]))
+            continue
+
+        domain = list(range(0, max_x + 1))
+        h = [1e-6 if x == 0 else max(0.0, net_profit_unit[i] * x) for x in domain]
+        h = np.array(h)
+        if h.max() > 0:
+            h = h / h.max()
+        domains.append(domain)
+        heuristics.append(h)
+        pheromone.append(np.random.uniform(0.9, 1.1, size=len(domain)))
+
+    n_products = len(price)
+    best_solution = None
+    best_profit = -np.inf
+    best_details = {}
+    no_improvement_count = 0
+
+    for it in range(iterations):
+        iteration_best_profit = -np.inf
+        iteration_best_sol = None
+
+        for a in range(ants):
+            solution = np.zeros(n_products, dtype=int)
+            # Flag to track if a valid solution (meeting constraints) was found during this ant's construction
+            current_ant_valid = True 
+            
+            for i in range(n_products):
+                tau = pheromone[i]
+                eta = heuristics[i]
+                weights = (tau ** alpha) * (eta ** beta) if not np.all(eta == 0) else np.power(tau, alpha)
+                probs = weights / np.sum(weights) if np.sum(weights) > 0 else np.ones(len(domains[i])) / len(domains[i])
+                
+                # Handle cases where probabilities might sum to zero or contain NaNs
+                if np.sum(probs) == 0 or np.isnan(probs).any():
+                    probs = np.ones(len(domains[i])) / len(domains[i]) # Fallback to uniform distribution
+
+                choice = np.random.choice(len(domains[i]), p=probs)
+                solution[i] = domains[i][choice]
+
+            # After constructing a full solution, check constraints
+            if not check_constraints(solution, Cp, Cm, Cl, S_unit, BP, Bm, BL, S_max, demand_max):
+                current_ant_valid = False
+                logger.debug(f"Ant {a+1}: Solution {solution.tolist()} violates constraints. Skipping profit calculation.")
+                continue # Skip to next ant if constraints are violated
+
+            profit_per_product = net_profit_unit * solution
+            total_profit = np.sum(profit_per_product)
+            prod_cost = np.dot(Cp, solution)
+            mark_cost = np.dot(Cm, solution)
+            log_cost = np.dot(Cl, solution)
+            shelf_used = np.dot(S_unit, solution)
+            
+            # Calculate violation for penalty, but the original code uses it for profit calculation
+            # The original code's penalized_profit was just total_profit, so I'll keep that for consistency
+            viol = max(0.0, prod_cost - BP) + max(0.0, mark_cost - Bm) + max(0.0, log_cost - BL) + max(0.0, shelf_used - S_max)
+            penalized_profit = total_profit # Original code did not penalize profit here
+
+            logger.debug(f"Ant {a+1}: Solution={solution.tolist()}, Profit={total_profit:.2f}, Violation={viol:.2f}")
+
+            if penalized_profit > iteration_best_profit:
+                iteration_best_profit = penalized_profit
+                iteration_best_sol = (solution.copy(), total_profit, viol, prod_cost, mark_cost, log_cost, shelf_used)
+
+            if penalized_profit > best_profit:
+                best_profit = penalized_profit
+                best_solution = solution.copy()
+                best_details = {
+                    'total_profit': total_profit,
+                    'violation': viol,
+                    'prod_cost': prod_cost,
+                    'mark_cost': mark_cost,
+                    'log_cost': log_cost,
+                    'shelf_used': shelf_used
+                }
+
+        # Evaporation
+        for i in range(n_products):
+            pheromone[i] *= (1 - rho)
+
+        if iteration_best_sol:
+            sol_vec, sol_profit, sol_viol, *_ = iteration_best_sol
+            # Ensure sol_viol is not zero to prevent division by zero
+            deposit_amount = Q * sol_profit / (1.0 + sol_viol)
+            for i in range(n_products):
+                # Ensure sol_vec[i] is in domains[i] before finding index
+                if sol_vec[i] in domains[i]:
+                    idx = domains[i].index(sol_vec[i])
+                    pheromone[i][idx] += deposit_amount
+                else:
+                    logger.warning(f"Product {i}: Quantity {sol_vec[i]} not found in domain {domains[i]}. Pheromone not updated for this product.")
+
+
+        logger.info(f"Iteration {it+1}/{iterations}, best penalized profit = {iteration_best_profit:.2f}")
+
+        # Check for no improvement based on best_profit, not iteration_best_profit
+        # This logic needs to be careful. If iteration_best_profit is used, it might reset too often.
+        # The original code compared iteration_best_profit <= best_profit.
+        # This means if the current iteration's best is not better than the overall best, count no improvement.
+        if iteration_best_profit <= best_profit: # This condition is problematic if best_profit is updated within the same iteration
+            no_improvement_count += 1
         else:
-            self.quantities = [0] * num_products # Initialize with zero quantities
-        self.profit = 0.0
+            no_improvement_count = 0
+            best_profit = iteration_best_profit # Update best_profit here if it was truly better
 
-    def clone(self) -> 'Ant':
-        return Ant(self.num_products, list(self.quantities))
-
-    def __repr__(self):
-        return f"Ant(quantities={self.quantities}, profit={self.profit:.2f})"
-
-# --- ACO Optimization ---
-def calculate_profit(quantities: List[int], params: List[Dict[str, float]], d_base: float, age_max: float, storage_sum: float) -> float:
-    total_profit = 0.0
-    for i, x in enumerate(quantities):
-        p = params[i]
-        total_revenue = p['pr'] * x
-        cost_per_item = p['cp'] + p['cm'] + p['cl'] + p['cs']
-        total_cost = cost_per_item * x
-
-        # Ensure age_max and storage_sum are not zero to avoid division by zero
-        pe_age_factor = (p['age'] / age_max) if age_max > 0 else 0
-        pe_storage_factor = (p['s_old'] / storage_sum) if storage_sum > 0 else 0
-
-        pe = d_base * pe_age_factor * pe_storage_factor
-        item_profit_with_penalty = (total_revenue - total_cost) * (1 - pe)
-        total_profit += item_profit_with_penalty
-    return total_profit
-
-def apply_constraints_and_repair(quantities: List[int], params: List[Dict[str, float]], Bp: float, Bm: float, BL: float, S_max: float) -> List[int]:
-    """Applies constraints and repairs quantities to be feasible."""
-    repaired_quantities = list(quantities) # Start with a copy
-
-    # Repair Demand: Ensure quantity + stock_old does not exceed demand
-    for i in range(len(repaired_quantities)):
-        max_q = params[i]['D_e'] - params[i]['s_old']
-        repaired_quantities[i] = min(repaired_quantities[i], max(0, int(max_q)))
-
-    # Repair Budgets and Shelf Space: Iteratively reduce quantities if constraints are violated
-    # Prioritize reducing products that contribute most to cost/shelf space for faster convergence
-
-    while True:
-        prod_cost = sum(params[i]['cp'] * repaired_quantities[i] for i in range(len(repaired_quantities)))
-        market_cost = sum(params[i]['cm'] * repaired_quantities[i] for i in range(len(repaired_quantities)))
-        log_cost = sum(params[i]['cl'] * repaired_quantities[i] for i in range(len(repaired_quantities)))
-        shelf_used = sum(params[i]['S_i'] * (repaired_quantities[i] + params[i]['s_old']) for i in range(len(repaired_quantities)))
-
-        violated = False
-        if prod_cost > Bp:
-            violated = True
-        if market_cost > Bm:
-            violated = True
-        if log_cost > BL:
-            violated = True
-        if shelf_used > S_max:
-            violated = True
-
-        if not violated:
-            break # All constraints met
-
-        # Find product to reduce: one with the highest combined cost/shelf_space per unit
-        idx_to_reduce = -1
-        max_impact = -1.0
-
-        for i in range(len(repaired_quantities)):
-            if repaired_quantities[i] > 0:
-                impact = (params[i]['cp'] + params[i]['cm'] + params[i]['cl'] + params[i]['S_i'])
-                if impact > max_impact:
-                    max_impact = impact
-                    idx_to_reduce = i
-
-        if idx_to_reduce != -1 and repaired_quantities[idx_to_reduce] > 0:
-            repaired_quantities[idx_to_reduce] -= 1
-        else:
-            # Cannot repair further, perhaps due to 0 quantities or other irreducible constraints
-            # This can happen if budgets are too restrictive for any production.
-            # In a real scenario, this might mean no feasible solution or very small quantities.
+        if no_improvement_count >= max_no_improvement:
+            logger.info(f"Early stopping at iteration {it+1}, no improvement in {max_no_improvement} iterations.")
             break
 
-    # Ensure no negative quantities
-    repaired_quantities = [max(0, q) for q in repaired_quantities]
+    # Ensure best_solution is not None before proceeding
+    if best_solution is None:
+        logger.warning("No valid solution found during ACO optimization.")
+        # Return default or error values
+        return np.array([]), 0.0, pd.DataFrame(), {}
 
-    return repaired_quantities
+    best_q = best_solution
+    final_profit = best_details['total_profit']
+    revenue = price * best_q
+    cost_total = (Cp + Cm + Cl + Cs) * best_q
+    pe = d_base * (age / age_max) * (s_old_space / storage_sum)
 
-def initialize_pheromones(num_products: int, initial_pheromone: float) -> List[float]:
-    return [initial_pheromone] * num_products
+    report = pd.DataFrame({
+        'Product_ID': data['Product ID'],
+        'Quantity': best_q,
+        'Revenue': revenue,
+        'Cost': cost_total,
+        'Profit': (revenue - cost_total)*(1 - pe),
+        'Penalty': pe
+    })
 
-def select_next_quantity(product_idx: int, pheromones: List[float], alpha: float, demand: float, stock: float, max_q_bits: int) -> int:
-    """
-    Selects a quantity for a single product based on pheromones.
-    This is a simplified selection process for discrete quantities.
-    """
-    # Max possible quantity for a product, limited by demand and bit representation
-    max_possible_q = int(demand - stock) # Max based on demand
-    max_representable_q = (1 << max_q_bits) - 1 # Max based on bits
-
-    # The effective max quantity for this step
-    current_max_q = min(max_possible_q, max_representable_q)
-
-    if current_max_q <= 0:
-        return 0 # Cannot produce any more for this product
-
-    probabilities = []
-    # Explore quantities from 0 up to current_max_q
-    for q_value in range(current_max_q + 1):
-        # The attractiveness can be based on the pheromone for this product, and some heuristic.
-        # For simplicity, we can use pheromones directly related to production possibility for the product.
-        # A more granular pheromone per quantity value would be more precise but complex.
-        attractiveness = pheromones[product_idx] ** alpha
-        probabilities.append(attractiveness)
-
-    total_prob = sum(probabilities)
-    if total_prob == 0:
-        return random.randint(0, current_max_q) # Fallback if no probabilities
-
-    normalized_probs = [p / total_prob for p in probabilities]
-
-    # Roulette wheel selection
-    r = random.random()
-    cumulative_prob = 0
-    for q_value, prob in enumerate(normalized_probs):
-        cumulative_prob += prob
-        if r <= cumulative_prob:
-            return q_value
-
-    return current_max_q # Fallback in case of floating point inaccuracies
+    return best_q, final_profit, report, best_details
 
 
-def update_pheromones(pheromones: List[float], ants: List[Ant], evaporation_rate: float, Q: float):
-    # Evaporate
-    pheromones[:] = [p * (1 - evaporation_rate) for p in pheromones]
-
-    # Deposit
-    # For simplicity, each ant deposits pheromone proportional to its profit,
-    # distributed among the products it "chose" to produce.
-    # A more advanced ACO would have pheromone trails on the "paths" (i.e., specific quantity choices).
-    for ant in ants:
-        if ant.profit > 0: # Only profitable ants deposit
-            pheromone_to_deposit = Q / ant.profit # Q is a constant, higher profit -> less pheromone deposited *per unit of profit*
-            # Typically, it's Q * profit / path_length or just Q * profit
-            # Let's simplify: Q * ant.profit
-            deposit_amount = Q * ant.profit
-
-            # Deposit equally on all products chosen for simplicity, or based on product contribution
-            for i, q_val in enumerate(ant.quantities):
-                if q_val > 0: # Only deposit if the product was chosen
-                    pheromones[i] += deposit_amount / ant.num_products # Distribute deposit across chosen products
-
-    # Prevent pheromones from becoming too small or too large (optional but good for stability)
-    min_pheromone = 0.01
-    max_pheromone = 10.0
-    pheromones[:] = [max(min_pheromone, min(max_pheromone, p)) for p in pheromones]
-
-
-def run_aco(excel_path: str, productionBudget: float, marketingBudget: float, logisticsBudget: float, storageSum: float, d_base: float, col_map: Dict[str, str]):
+def run_aco(excel_path: str, productionBudget: float, marketingBudget: float, logisticsBudget: float, shelf_capacity: float, d_base: float, col_map: Dict[str, str]):
     try:
         logger.info(f"Reading Excel file: {excel_path}")
         df = pd.read_excel(excel_path)
 
-        # Map DataFrame to ACO parameters using the provided col_map
         # Ensure all columns from col_map exist in the DataFrame
         missing_cols_in_df = [v for k, v in col_map.items() if v not in df.columns]
         if missing_cols_in_df:
             raise ValueError(f"Missing required columns in Excel/CSV: {missing_cols_in_df}. Please check your file and column mappings.")
 
-        params_df = pd.DataFrame({
-            'cp': df[col_map['cp']],
-            'cm': df[col_map['cm']],
-            'cl': df[col_map['cl']],
-            'cs': df[col_map['cs']],
-            'age': df[col_map['age']],
-            's_old': df[col_map['stock']], # Uses col_map['stock']
-            'D_e': df[col_map['demand']],   # Uses col_map['demand']
-            'S_i': df[col_map['shelf']],    # Uses col_map['shelf']
-            'pr': df[col_map['price']]
+        # Prepare data for ant_colony_optimization function
+        # The 'Product ID' column is crucial for reporting
+        aco_data = pd.DataFrame({
+            'Product ID': df[col_map['name']], # Assuming 'name' maps to 'Product ID'
+            'Price': df[col_map['price']],
+            'Production_Cost_Per_Unit': df[col_map['cp']],
+            'Marketing_Cost_Per_Unit': df[col_map['cm']],
+            'Logistics_Cost_Per_Unit': df[col_map['cl']],
+            'Shelf_Space_Cost_Per_Unit': df[col_map['cs']],
+            'Age': df[col_map['age']],
+            'Remaining_Products': df[col_map['stock']],
+            'shelf_space': df[col_map['shelf']],
+            'Average_Expected_Demand': df[col_map['demand']]
         })
 
-        num_products = len(params_df)
+        num_products = len(aco_data)
         if num_products == 0:
             return {
                 "total_profit": 0.0,
                 "products": []
             }
 
-        # ACO Configuration
-        num_ants = 50
-        num_iterations = 100
-        initial_pheromone = 0.1
-        evaporation_rate = 0.05
-        Q = 1.0 # Pheromone deposit factor (constant)
-        alpha = 1.0 # Influence of pheromone (exponent)
+        # ACO Configuration parameters for ant_colony_optimization
+        # Using default values from the original final aco.py for core ACO params
+        # and passing budget constraints from run_aco arguments
+        aco_params = {
+            'alpha': 5.0,
+            'beta': 10.0,
+            'evaporation_rate': 0.3,
+            'n_ants': 100,
+            'n_iterations': 10,
+            'pheromone_coefficient': 0.5,
+            'max_no_improvement': 5,
+            'budget_production': productionBudget,
+            'budget_marketing': marketingBudget,
+            'budget_logistics': logisticsBudget,
+            'shelf_capacity': shelf_capacity, # Renamed from storageSum to shelf_capacity for clarity
+            'd_base': d_base
+        }
 
-        # Max value for quantities based on chromosome_bits in GA.
-        # Since ACO doesn't use bits directly here, we need a reasonable max quantity.
-        # We can derive it from the max demand or a fixed large number.
-        # Let's assume a reasonable max quantity for each product, perhaps linked to max_representable_q from GA.
-        # For simplicity, let's just pick a reasonable large number, or derive from max demand.
-        # max_q_bits for ACO should be based on the largest possible quantity that might be needed.
-        # If no chromosome_bits from frontend for ACO, we might need a default or derive from max demand.
-        # For now, let's assume a max quantity based on the highest demand if that's reasonable.
-        max_possible_demand_q = float(params_df['D_e'].max()) if not params_df.empty else 1000
-        # Let's say, 15 bits can represent up to 32767, which is usually enough for quantity.
-        max_q_for_selection = 32767 # A reasonable large number
+        # Call the core ACO function
+        best_q, total_profit_aco, report_df, details = ant_colony_optimization(aco_data, aco_params)
 
-        age_max = float(params_df['age'].max())
-        storage_sum = float(params_df['s_old'].sum())
-
-        # Prepare parameters for profit calculation
-        params = params_df.to_dict('records')
-
-        pheromones = initialize_pheromones(num_products, initial_pheromone)
-        best_ant = None
-        best_profit = -math.inf
-
-        start_time = time.time() # Start time for progress tracking
-        for iteration in range(num_iterations):
-            # Calculate and report progress
-            progress_percent = (iteration / num_iterations) * 100
-            elapsed_time = time.time() - start_time
-            if iteration > 0:  # Avoid division by zero
-                estimated_total_time = elapsed_time * num_iterations / iteration
-                estimated_remaining = max(0, estimated_total_time - elapsed_time)
-            else:
-                estimated_remaining = 120  # Initial estimate of 2 minutes
-            
-            # Output progress in format that Java can parse
-            print(f"[PROGRESS] ACO: {progress_percent:.1f}% completed, estimated {estimated_remaining:.1f}s remaining", flush=True)
-            
-            ants: List[Ant] = []
-            for _ in range(num_ants):
-                current_quantities = [0] * num_products
-                for product_idx in range(num_products):
-                    # Select a quantity for each product
-                    selected_q = select_next_quantity(
-                        product_idx,
-                        pheromones,
-                        alpha,
-                        params[product_idx]['D_e'],
-                        params[product_idx]['s_old'],
-                        int(math.log2(max_q_for_selection)) + 1 # Bits needed to represent max_q
-                    )
-                    current_quantities[product_idx] = selected_q
-
-                # Apply constraints and repair the generated quantities
-                final_quantities = apply_constraints_and_repair(
-                    current_quantities, params, productionBudget, marketingBudget, logisticsBudget, storageSum
-                )
-
-                ant = Ant(num_products, final_quantities)
-                ant.profit = calculate_profit(ant.quantities, params, d_base, age_max, storage_sum)
-                ants.append(ant)
-
-                if ant.profit > best_profit:
-                    best_profit = ant.profit
-                    best_ant = ant.clone()
-                    logger.debug(f"Iteration {iteration}: New best profit = {best_profit:.2f}")
-
-            update_pheromones(pheromones, ants, evaporation_rate, Q)
-
-
-        if best_ant is None:
-            # This means no feasible solution was found with positive profit
-            return {
+        if best_q.size == 0: # Handle case where no valid solution was found
+             return {
                 "total_profit": 0.0,
                 "products": []
             }
 
-
-        # Final results calculation using the best_ant
-        final_quantities = best_ant.quantities
-        # Explicitly cast to float
-        realProfit = float(calculate_profit(final_quantities, params, d_base, age_max, storage_sum))
-
-        # Calculate actual profit without penalty for reporting to user
+        # Prepare results in the format expected by the original run_aco's return
         products_results = []
-        for i, row_idx in enumerate(df.index): # Iterate using DataFrame's index
-            row = df.loc[row_idx] # Get the row data using original DataFrame
-
-            # Retrieve values using col_map and explicitly cast to Python native types
-            product_name = str(row[col_map['name']])
-            price = float(row[col_map['price']])
-            cp = float(row[col_map['cp']])
-            cm = float(row[col_map['cm']])
-            cl = float(row[col_map['cl']])
-            cs = float(row[col_map['cs']])
+        for i in range(num_products):
+            product_name = str(aco_data['Product ID'].iloc[i])
+            price = float(aco_data['Price'].iloc[i])
+            cp = float(aco_data['Production_Cost_Per_Unit'].iloc[i])
+            cm = float(aco_data['Marketing_Cost_Per_Unit'].iloc[i])
+            cl = float(aco_data['Logistics_Cost_Per_Unit'].iloc[i])
+            cs = float(aco_data['Shelf_Space_Cost_Per_Unit'].iloc[i])
 
             unit_cost = cp + cm + cl + cs
-            # Explicitly cast to int
-            quantity = int(final_quantities[i])
+            quantity = int(best_q[i])
 
-            # Calculate total profit and total cost for the product
             total_profit_product = (price - unit_cost) * quantity
             total_cost_product = unit_cost * quantity
 
@@ -324,20 +285,40 @@ def run_aco(excel_path: str, productionBudget: float, marketingBudget: float, lo
                 "total_cost": total_cost_product
             })
 
-        # Calculate overall real profit (without penalty) for the best solution
-        # Explicitly cast to float
+        # The total_profit_aco already includes the penalty from the ACO algorithm's perspective.
+        # The original run_aco calculated overall_real_profit_no_penalty by summing individual product profits.
+        # Let's use the total_profit_aco as it's the result of the optimization.
         overall_real_profit_no_penalty = float(sum(p['total_profit'] for p in products_results))
 
+
         return {
-            "total_profit": overall_real_profit_no_penalty, # Report actual profit without penalty
+            "total_profit": overall_real_profit_no_penalty, # Reporting actual profit without penalty for user
             "products": products_results
         }
 
     except Exception as e:
         logger.error(f"Ant Colony Optimization Error: {str(e)}")
         traceback.print_exc()
-        # Return a structured error response
         return {"error": str(e)}
+
+# GEMINI ENHANCEMENT
+def export_detailed_data(data_df, params, results):
+    """Export all data, parameters, and results in a format Gemini can process"""
+    detailed_output = {
+        "input_data": data_df.to_dict(orient="records"),
+        "parameters": {
+            "production_budget": params.get('budget_production', 0),
+            "marketing_budget": params.get('budget_marketing', 0),
+            "logistics_budget": params.get('logistics_budget', 0),
+            "shelf_space": params.get('shelf_capacity', 0),
+            "discount_base": params.get('d_base', 0)
+        },
+        "results": results,
+        "algorithm": "ant_colony_optimization"
+    }
+    with open('aco_detailed_output.json', 'w') as f:
+        json.dump(detailed_output, f, indent=2)
+    return detailed_output
 
 def main():
     try:
@@ -372,16 +353,15 @@ def main():
             'cl': args.col_cl,
             'cs': args.col_shelf_cost,
             'age': args.col_age,
-            'stock': args.col_stock,    # Changed from 's_old' to 'stock' to align with col_map key
-            'shelf': args.col_shelf,    # Changed from 'S_i' to 'shelf' to align with col_map key
-            'demand': args.col_demand   # Changed from 'D_e' to 'demand' to align with col_map key
+            'stock': args.col_stock,
+            'shelf': args.col_shelf,
+            'demand': args.col_demand
         }
 
         # Validate that no 'null' strings were passed for required columns from Java
         for key, value in col_map.items():
             if value == "null" or value == "":
                 raise ValueError(f"Column mapping for '{key}' is missing or invalid (received '{value}'). Please select all required columns in the UI.")
-
 
         results = run_aco(
             args.file_path,
@@ -390,7 +370,7 @@ def main():
             args.bl,
             args.s_max,
             args.d_base,
-            col_map # Pass the column map
+            col_map
         )
         print(json.dumps(results))
     except Exception as e:
@@ -400,23 +380,5 @@ def main():
         print(json.dumps(error_result))
         sys.exit(1)
 
-# GEMINI ENHANCEMENT
-def export_detailed_data(data_df, params, results):
-    """Export all data, parameters, and results in a format Gemini can process"""
-    detailed_output = {
-        "input_data": data_df.to_dict(orient="records"),
-        "parameters": {
-            "production_budget": params.get('budget_production', 0),
-            "marketing_budget": params.get('budget_marketing', 0),
-            "logistics_budget": params.get('budget_logistics', 0),
-            "shelf_space": params.get('shelf_capacity', 0),
-            "discount_base": params.get('d_base', 0)
-        },
-        "results": results,
-        "algorithm": "ant_colony_optimization"
-    }
-    with open('aco_detailed_output.json', 'w') as f:
-        json.dump(detailed_output, f, indent=2)
-    return detailed_output
 if __name__ == "__main__":
     main()

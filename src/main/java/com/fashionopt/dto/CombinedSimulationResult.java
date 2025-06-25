@@ -1,24 +1,14 @@
 package com.fashionopt.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.List;
 
+@Setter
+@Getter
 public class CombinedSimulationResult {
     private SimulationResult gaResult;
     private SimulationResult antColonyResult;
-    
-    public SimulationResult getGaResult() {
-        return gaResult;
-    }
-    
-    public void setGaResult(SimulationResult gaResult) {
-        this.gaResult = gaResult;
-    }
-    
-    public SimulationResult getAntColonyResult() {
-        return antColonyResult;
-    }
-    
-    public void setAntColonyResult(SimulationResult antColonyResult) {
-        this.antColonyResult = antColonyResult;
-    }
+
 }
