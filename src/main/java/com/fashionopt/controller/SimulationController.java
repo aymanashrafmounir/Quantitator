@@ -173,4 +173,18 @@ public class SimulationController {
         simulationStatusService.cleanupSimulation(simulationId);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * New endpoint for terminating a running simulation.
+     */
+    @PostMapping("/simulate/terminate/{simulationId}")
+    public ResponseEntity<String> terminateSimulation(@PathVariable String simulationId) {
+        boolean terminated = simulationStatusService.terminateSimulation(simulationId);
+        if (terminated) {
+            return ResponseEntity.ok("Simulation terminated successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Simulation not found or not running");
+        }
+    }
 }
+

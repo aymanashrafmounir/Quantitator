@@ -17,7 +17,7 @@
 </div>
 
 <nav class="navbar">
-    <div class="nav-brand"><img src="Logo.png" alt="Company Logo" style="height: 110px;margin-left: 30px;"></div>
+    <div class="nav-brand">FashionOpt</div>
     <div class="nav-links">
         <button class="nav-link active" data-section="dashboard">Dashboard</button>
         <button class="nav-link" data-section="simulate">Simulate</button>
@@ -96,10 +96,16 @@
                     <input type="number" id="bits_number" class="param-input" required min="1">
                     <span class="validation-message" id="bits_number-error"></span>
                 </div>
-                <button id="run-simulation">
-                    <span class="button-text">Run Simulation</span>
-                    <span class="spinner hidden"></span>
-                </button>
+                <div class="simulation-buttons">
+                    <button id="run-simulation">
+                        <span class="button-text">Run Simulation</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                    <button id="terminate-simulation" class="terminate-button hidden">
+                        <span class="button-text">Terminate Simulation</span>
+                        <span class="spinner hidden"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

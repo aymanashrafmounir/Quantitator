@@ -1121,3 +1121,69 @@ p { margin-bottom: 1rem; color: var(--text-color-secondary); }
     background-color: #365899;
 }
 
+
+/* Simulation Buttons Container */
+.simulation-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.simulation-buttons button {
+    flex: 1;
+    padding: 1rem 2rem;
+    border: none;
+    cursor: pointer;
+    border-radius: var(--border-radius-small);
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-headings);
+    transition: background-color var(--transition-speed-normal) ease, transform var(--transition-speed-fast) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Terminate Button Styles */
+.terminate-button {
+    background: var(--error-color);
+    color: var(--text-color-primary);
+}
+
+.terminate-button:hover {
+    background-color: #e55555;
+}
+
+.terminate-button:active {
+    transform: scale(0.98);
+}
+
+.terminate-button.loading {
+    background-color: #e55555;
+    cursor: not-allowed;
+}
+
+.terminate-button .spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: var(--text-color-primary);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+/* Update Run Simulation Button for flex layout */
+#run-simulation {
+    background: var(--accent-color-primary);
+    color: var(--text-color-primary);
+    margin-top: 0; /* Remove margin since it's in a flex container */
+    width: auto; /* Remove fixed width */
+}
+
+@media (max-width: 768px) {
+    .simulation-buttons {
+        flex-direction: column;
+    }
+}
+

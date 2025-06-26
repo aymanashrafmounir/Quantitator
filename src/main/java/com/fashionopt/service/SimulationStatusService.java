@@ -224,4 +224,39 @@ public class SimulationStatusService {
         simulationStatuses.remove(simulationId);
         System.out.println("Cleaned up simulation: " + simulationId);
     }
+
+    /**
+     * Terminates a running simulation by setting its status to TERMINATED.
+     * @param simulationId The ID of the simulation to terminate.
+     * @return true if the simulation was successfully terminated, false if not found or already finished.
+     */
+    public boolean terminateSimulation(String simulationId) {
+        SimulationStatus status = simulationStatuses.get(simulationId);
+        if (status != null && "RUNNING".equals(status.getOverallStatus())) {
+            status.setOverallStatus("TERMINATED");
+            status.setErrorMessage("Simulation was terminated by user");
+            status.setGaFinished(true);
+            status.setAcoFinished(true);
+            status.setGaProgress(100.0);
+            status.setAcoProgress(100.0);
+            status.setGaEstimatedTimeRemaining(0.0);
+            status.setAcoEstimatedTimeRemaining(0.0);
+            System.out.println("Simulation " + simulationId + " was terminated by user");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a simulation is currently running.
+     * @param simulationId The ID of the simulation.
+     * @return true if the simulation is running, false otherwise.
+     */
+    public boolean isSimulationRunning(String simulationId) {
+        SimulationStatus status = simulationStatuses.get(simulationId);
+        return status != null && "RUNNING".equals(status.getOverallStatus());
+    }
+
+
 }
+

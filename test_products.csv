@@ -1,0 +1,7 @@
+Product Name,Price,Production Cost,Marketing Cost,Logistics Cost,Shelf Space Cost,Age,Remaining Products,Demand,Shelf Space
+T-Shirt Basic,25.99,8.50,2.00,1.50,0.25,30,100,150,2
+Jeans Classic,79.99,25.00,5.00,3.00,0.50,45,80,120,3
+Dress Summer,59.99,18.00,4.00,2.50,0.40,20,60,90,2.5
+Sneakers Sport,129.99,40.00,8.00,5.00,0.75,60,50,80,4
+Jacket Winter,199.99,65.00,12.00,8.00,1.00,90,30,50,5
+

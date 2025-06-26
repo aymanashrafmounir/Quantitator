@@ -15,8 +15,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const rowCountSpan = document.getElementById("row-count");
     const columnMappingDiv = document.getElementById("column-mapping");
     const runSimulationButton = document.getElementById("run-simulation");
+    const terminateSimulationButton = document.getElementById("terminate-simulation");
     const buttonText = runSimulationButton.querySelector(".button-text");
     const buttonSpinner = runSimulationButton.querySelector(".spinner");
+    const terminateButtonText = terminateSimulationButton.querySelector(".button-text");
+    const terminateButtonSpinner = terminateSimulationButton.querySelector(".spinner");
     const generalUploadFeedback = document.getElementById("general-upload-feedback");
     const formValidationSummary = document.getElementById("form-validation-summary");
     const globalLoaderOverlay = document.getElementById("global-loader-overlay");
@@ -841,6 +844,42 @@ document.addEventListener("DOMContentLoaded", () => {
         globalLoaderOverlay.classList.toggle("hidden", !show);
     }
 
+    // Terminate simulation button event listener
+    terminateSimulationButton.addEventListener("click", async () => {
+        if (!currentSimulationId || !isSimulationActive) {
+            console.warn("No active simulation to terminate");
+            return;
+        }
+
+        // Disable terminate button and show spinner
+        terminateSimulationButton.disabled = true;
+        terminateButtonText.textContent = "Terminating...";
+        terminateButtonSpinner.classList.remove("hidden");
+
+        try {
+            const response = await fetch(`${API_URL}/simulate/terminate/${currentSimulationId}`, {
+                method: "POST"
+            });
+
+            if (response.ok) {
+                console.log("Simulation terminated successfully");
+                stopPolling("Simulation was terminated by user", "warning");
+            } else {
+                const errorText = await response.text();
+                console.error("Failed to terminate simulation:", errorText);
+                showResultsMessage(`Failed to terminate simulation: ${errorText}`, "error");
+            }
+        } catch (error) {
+            console.error("Error terminating simulation:", error);
+            showResultsMessage(`Error terminating simulation: ${error.message}`, "error");
+        } finally {
+            // Reset terminate button
+            terminateSimulationButton.disabled = false;
+            terminateButtonText.textContent = "Terminate Simulation";
+            terminateButtonSpinner.classList.add("hidden");
+        }
+    });
+
     // Main simulation event handler
     runSimulationButton.addEventListener("click", async () => {
         // Prevent multiple clicks if a simulation is already active
@@ -868,6 +907,10 @@ document.addEventListener("DOMContentLoaded", () => {
         buttonText.textContent = "Starting simulation...";
         buttonSpinner.classList.remove("hidden");
         runSimulationButton.disabled = true; // Disable button immediately
+        
+        // Show terminate button and hide run button
+        terminateSimulationButton.classList.remove("hidden");
+        runSimulationButton.style.display = "none";
 
         const formData = new FormData();
         if (fileInput.files[0]) {
@@ -879,6 +922,10 @@ document.addEventListener("DOMContentLoaded", () => {
             buttonText.textContent = "Run Simulation";
             buttonSpinner.classList.add("hidden");
             runSimulationButton.disabled = false;
+            
+            // Hide terminate button and show run button
+            terminateSimulationButton.classList.add("hidden");
+            runSimulationButton.style.display = "flex";
             showGeneralUploadFeedback("File is required for simulation.");
             return;
         }
@@ -962,6 +1009,10 @@ document.addEventListener("DOMContentLoaded", () => {
             buttonText.textContent = "Run Simulation";
             buttonSpinner.classList.add("hidden");
             runSimulationButton.disabled = false;
+            
+            // Hide terminate button and show run button
+            terminateSimulationButton.classList.add("hidden");
+            runSimulationButton.style.display = "flex";
         }
     });
 
@@ -1163,6 +1214,10 @@ document.addEventListener("DOMContentLoaded", () => {
         buttonText.textContent = "Run Simulation";
         buttonSpinner.classList.add("hidden");
         runSimulationButton.disabled = false;
+        
+        // Hide terminate button and show run button
+        terminateSimulationButton.classList.add("hidden");
+        runSimulationButton.style.display = "flex";
         console.log(`Polling stopped: ${message}`); // Log the message here
         // Update the main results message area with the final status message
         showResultsMessage(message, type);
