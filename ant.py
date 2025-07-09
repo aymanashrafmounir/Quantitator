@@ -47,12 +47,11 @@ def ant_colony_optimization(data, params):
     De = data['Average_Expected_Demand'].values.astype(int)
 
     demand_max = np.maximum(De - R, 0)
-    BP = params.get('budget_production', 2000000)
-    Bm = params.get('budget_marketing', 20000000)
-    BL = params.get('budget_logistics', 2000000)
-    S_max = params.get('shelf_capacity', 20000.0)
-    TSC = params.get('Total_shelf_space_cost', 150000.0) # This parameter is not used in the core logic, only in report
-    d_base = params.get('d_base', 0.1)
+    BP = params.get('budget_production' )
+    Bm = params.get('budget_marketing')
+    BL = params.get('budget_logistics')
+    S_max = params.get('shelf_capacity')
+    d_base = params.get('d_base')
 
     age_max = np.max(age)
     s_old_space = R
