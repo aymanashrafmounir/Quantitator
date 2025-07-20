@@ -1,4 +1,5 @@
-# Enhanced Fashion Optimization Project
+# Quantitator
+# Enhanced ECommerce Optimization Project
 
 ## Overview
 This project has been enhanced with several new features to improve user experience and provide better feedback during algorithm execution.
