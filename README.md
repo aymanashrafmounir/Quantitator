@@ -1,6 +1,6 @@
 # Quantitator: Revolutionize Your Fashion Pricing with AI-Powered Optimization! 🚀
 
-![Quantitator Logo](https://via.placeholder.com/150x50?text=Quantitator)  <!-- Placeholder; replace with actual logo if available -->
+![Quantitator Logo](Screenshots/Logo_T.png)  <!-- Placeholder; replace with actual logo if available -->
 
 **Unlock Maximum Profitability in Fashion Retail – Smart, Fast, and Effortless!**  
 Tired of guesswork in pricing and inventory? Quantitator uses cutting-edge Genetic Algorithms (GA) and Ant Colony Optimization (ACO) to supercharge your e-commerce strategy. Predict profits, optimize production, and dominate the market – all in minutes! 💰📈
@@ -17,19 +17,19 @@ Whether you're a fashion startup or a retail giant, Quantitator turns data into 
 ## Screenshots: See the Magic in Action! 📸
 Check out these glimpses of Quantitator's sleek interface and powerful features:
 
-![Dashboard Overview](Screenshots/screenshot1.png)  
+![Dashboard Overview](Screenshots/Main_Page.png)  
 *The main dashboard showing predicted profits and optimal products – your gateway to smarter pricing!*
 
-![AI Chat Assistant](Screenshots/screenshot2.png)  
+![AI Chat Assistant](Screenshots/Chat_With_AI.png)  
 *Chat with our FashionOpt AI for instant help and insights – like having an expert on speed dial!*
 
-![Simulation Setup](Screenshots/screenshot3.png)  
+![Simulation Setup](Screenshots/Upload_File_Page.png)  
 *Upload your data and tweak parameters effortlessly – budgets, discounts, and more at your fingertips!*
 
-![Simulation Results](Screenshots/screenshot4.png)  
+![Simulation Results](Screenshots/Result_Page.png)  
 *Detailed analysis with GA results: profits, units, top products – data that drives decisions!*
 
-![Visual Analytics](Screenshots/screenshot5.png)  
+![Visual Analytics](Screenshots/Visualization_data_in_result_page.png)  
 *Stunning charts for production quantities, profit contributions, and cost vs. profit – visualize success!*
 
 ## Overview: The Ultimate E-Commerce Booster 🔧
