@@ -1,7 +1,6 @@
 # Quantitator: Revolutionize Your Fashion Pricing with AI-Powered Optimization! 🚀
 
-![Quantitator Logo](Screenshots/Logo_T.png)  <!-- Placeholder; replace with actual logo if available -->
-
+![Quantitator Logo](Screenshots/Logo_T.png) 
 **Unlock Maximum Profitability in Fashion Retail – Smart, Fast, and Effortless!**  
 Tired of guesswork in pricing and inventory? Quantitator uses cutting-edge Genetic Algorithms (GA) and Ant Colony Optimization (ACO) to supercharge your e-commerce strategy. Predict profits, optimize production, and dominate the market – all in minutes! 💰📈
 
